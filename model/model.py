@@ -3,7 +3,8 @@ import math
 import torch
 import torch.nn.functional as F
 from torch import nn
-from utils import Block, LayerNorm
+
+from model.utils import Block, LayerNorm
 
 
 class DecoderOnly(nn.Module):
@@ -66,7 +67,6 @@ class DecoderOnly(nn.Module):
             t <= self.block_size
         ), f"Cannot forward sequence of length {t}, block size is only {self.block_size}"
         pos = torch.arange(0, t, dtype=torch.long, device=device)  # shape (t)
-        print(idx.shape)
         # forward the GPT model itself
         tok_emb = self.decoder.wte(idx)  # token embeddings of shape (b, t, n_embd)
         pos_emb = self.decoder.wpe(pos)  # position embeddings of shape (t, n_embd)
@@ -89,12 +89,3 @@ class DecoderOnly(nn.Module):
             loss = None
 
         return logits, loss
-
-
-device = "mps"
-with torch.device(device):
-    x = torch.randint(low=1, high=50304, size=(10, 1024))
-model = DecoderOnly(512, 64, 50304, 1024)
-model.to(device)
-out = model(x)
-print(out[0].shape)

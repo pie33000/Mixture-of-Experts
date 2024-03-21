@@ -1,8 +1,9 @@
 import torch
 import torch.nn.functional as F
-from attention import MultiHeadAttentionLayer
-from ffn import FFN
 from torch import nn
+
+from model.attention import MultiHeadAttentionLayer
+from model.ffn import FFN
 
 
 class LayerNorm(nn.Module):
