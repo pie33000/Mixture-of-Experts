@@ -18,7 +18,7 @@ class MultiHeadAttentionLayer(nn.Module):
         self.residual_dropout = nn.Dropout(p=0.1)
         self.dropout = nn.Dropout(p=0.1)
 
-    def forward(self, x, mask=None):
+    def forward(self, x):
         """
         :param query: (batch_size, query_len, d_model)
         :param key: (batch_size, key_len, d_model)
@@ -29,23 +29,24 @@ class MultiHeadAttentionLayer(nn.Module):
         assert x.dim() == 3
         B, T, C = x.size()
 
+        mask = torch.tril(torch.ones(T, T)).view(1, 1, T, T)
+
         q, k, v = self.proj_attn(x).split(self.d_model, dim=2)
         k = k.view(B, T, self.h, C // self.h).transpose(1, 2)  # (B, n*h, T, h*C)
         q = q.view(B, T, self.h, C // self.h).transpose(1, 2)
         v = v.view(B, T, self.h, C // self.h).transpose(1, 2)
 
-        out, prob = self.attention(q, k, v)
+        out, prob = self.attention(q, k, v, mask, T)
         out = out.transpose(1, 2).contiguous().view(B, T, C)
 
         out = self.residual_dropout(out)
         return out, prob
 
-    def attention(self, query, key, value, mask=None):
+    def attention(self, query, key, value, mask=None, T=None):
         d_k = key.size(-1)
         scores = query.matmul(key.transpose(-2, -1)) / torch.sqrt(torch.tensor(d_k))
 
-        if mask is not None:
-            scores = scores.masked_fill(mask == 0, float("-inf"))
+        scores = scores.masked_fill(mask[:, :, :T, :T] == 0, float("-inf"))
 
         scores_proba = F.softmax(scores, dim=-1)
         scores_proba = self.dropout(scores_proba)
