@@ -42,7 +42,7 @@ def save_checkpoint(model, optimizer, loss, epoch, iteration, directory_path):
             "optimizer_state_dict": optimizer.state_dict(),
             "loss": loss.item(),
         },
-        f"{directory_path}/check-{iteration}-{batch}.pt",
+        f"{directory_path}/check-{iteration}-{epoch}.pt",
     )
 
 
@@ -53,7 +53,7 @@ for iter in range(nb_iteration):
     for i, file in enumerate(dataset):
         batches = get_batches(sequence_length, file, batch_size)
         n = len(batches)
-        for i, batch in enumerate(batches):
+        for batch_number, batch in enumerate(batches):
             x, y = batch
 
             optimizer.zero_grad()
@@ -65,8 +65,10 @@ for iter in range(nb_iteration):
             y = y.view(-1)
 
             loss = criterion(out, y)
-            if i % nb_eval_iter == 0 or nb_iteration % 10 == 0:
+            if batch_number % nb_eval_iter == 0:
                 print(f"Iter {iter} - Batch {i} - Loss: {loss}")
-                save_checkpoint(model, optimizer, loss, i, iter, MODEL_CHECKPOINT_PATH)
+                save_checkpoint(
+                    model, optimizer, loss, batch_number, iter, MODEL_CHECKPOINT_PATH
+                )
             loss.backward()
             optimizer.step()
