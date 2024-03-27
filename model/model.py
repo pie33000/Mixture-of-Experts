@@ -8,7 +8,9 @@ from model.utils import Block, LayerNorm
 
 
 class DecoderOnly(nn.Module):
-    def __init__(self, d_model, h, vocab_size, block_size) -> None:
+    def __init__(
+        self, d_model, h, vocab_size, block_size, is_moe: bool = False
+    ) -> None:
         super().__init__()
 
         self.block_size = block_size
@@ -18,7 +20,9 @@ class DecoderOnly(nn.Module):
                 wte=nn.Embedding(vocab_size, d_model),
                 wpe=nn.Embedding(block_size, d_model),
                 drop=nn.Dropout(p=0.1),
-                h=nn.ModuleList([Block(d_model, h) for _ in range(d_model // h)]),
+                h=nn.ModuleList(
+                    [Block(d_model, h, is_moe) for _ in range(d_model // h)]
+                ),
                 ln_f=LayerNorm(d_model, bias=True),
             )
         )

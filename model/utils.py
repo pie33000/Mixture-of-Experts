@@ -3,7 +3,7 @@ import torch.nn.functional as F
 from torch import nn
 
 from model.attention import MultiHeadAttentionLayer
-from model.ffn import FFN
+from model.moe import FFN, Router
 
 
 class LayerNorm(nn.Module):
@@ -18,7 +18,7 @@ class LayerNorm(nn.Module):
 
 
 class Block(nn.Module):
-    def __init__(self, d_model, h) -> None:
+    def __init__(self, d_model, h, is_moe) -> None:
         super(Block, self).__init__()
         self.d_model = d_model
         self.h = h
@@ -26,7 +26,10 @@ class Block(nn.Module):
         self.ln_1 = LayerNorm(self.d_model, bias=True)
         self.attn = MultiHeadAttentionLayer(self.d_model, self.h)
         self.ln_2 = LayerNorm(self.d_model, bias=True)
-        self.ffn = FFN(self.d_model)
+        if is_moe:
+            self.ffn = Router(8, 2, d_model)
+        else:
+            self.ffn = FFN(self.d_model)
 
     def forward(self, x):
         x = x + self.attn(self.ln_1(x))[0]
